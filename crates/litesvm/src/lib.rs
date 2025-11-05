@@ -728,8 +728,7 @@ impl LiteSVM {
         let program_bytes = std::fs::read(path)?;
         let program_len = program_bytes.len();
         let lamports = self.minimum_balance_for_rent_exemption(program_len);
-        let mut account =
-            AccountSharedData::new(lamports, program_len, &bpf_loader_upgradeable::ID.into());
+        let mut account = AccountSharedData::new(lamports, program_len, &bpf_loader::ID.into());
         account.set_executable(true);
         account.set_data_from_slice(&program_bytes);
         let current_slot = self
@@ -742,7 +741,7 @@ impl LiteSVM {
             None,
             &mut LoadProgramMetrics::default(),
             account.data(),
-            &bpf_loader::id(),
+            account.owner(),
             account.data().len(),
             current_slot,
             self.accounts
@@ -754,6 +753,9 @@ impl LiteSVM {
         )
         .unwrap_or_default();
         loaded_program.effective_slot = current_slot;
+
+        account.set_owner(bpf_loader_upgradeable::id());
+
         self.accounts.add_account(program_id, account)?;
         self.accounts
             .programs_cache
