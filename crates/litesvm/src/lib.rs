@@ -257,6 +257,7 @@ much easier.
 use precompiles::load_precompiles;
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
+use solana_sdk_ids::bpf_loader_upgradeable;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
@@ -718,17 +719,17 @@ impl LiteSVM {
     }
 
     /// Adds an SBF program with owner to the test environment from the file specified.
-    pub fn add_program_from_file_with_owner(
+    pub fn add_upgradable_program_from_file(
         &mut self,
         program_id: impl Into<Pubkey>,
-        owner: impl Into<Pubkey>,
         path: impl AsRef<Path>,
     ) -> Result<(), LiteSVMError> {
         let program_id = program_id.into();
         let program_bytes = std::fs::read(path)?;
         let program_len = program_bytes.len();
         let lamports = self.minimum_balance_for_rent_exemption(program_len);
-        let mut account = AccountSharedData::new(lamports, program_len, &owner.into());
+        let mut account =
+            AccountSharedData::new(lamports, program_len, &bpf_loader_upgradeable::ID.into());
         account.set_executable(true);
         account.set_data_from_slice(&program_bytes);
         let current_slot = self
@@ -741,7 +742,7 @@ impl LiteSVM {
             None,
             &mut LoadProgramMetrics::default(),
             account.data(),
-            account.owner(),
+            &bpf_loader::id(),
             account.data().len(),
             current_slot,
             self.accounts
